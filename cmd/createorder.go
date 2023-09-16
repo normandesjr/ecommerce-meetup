@@ -14,11 +14,15 @@ import (
 )
 
 var customer string
+var amount float64
 var addItems bool
 
 func init() {
 	createOrderCmd.Flags().StringVar(&customer, "customer", "", "The customer to save the order")
 	createOrderCmd.MarkFlagRequired("customer")
+
+	createOrderCmd.Flags().Float64Var(&amount, "amount", 0, "The order amount")
+	createOrderCmd.MarkFlagRequired("amount")
 
 	createOrderCmd.Flags().BoolVar(&addItems, "add-items", false, "Add 2 items to order")
 	rootCmd.AddCommand(createOrderCmd)
@@ -35,7 +39,6 @@ func createOrder(cmd *cobra.Command, args []string) {
 
 	orderId := ksuid.New().String()
 	createdAt := time.Now().UTC().Format(time.RFC3339)
-	amount := rand.Float64() * 200
 
 	param := &dynamodb.PutItemInput{
 		Item: map[string]types.AttributeValue{
@@ -80,7 +83,7 @@ func addItemsToOrder(input *dynamodb.PutItemInput, orderId string) {
 				"Description": &types.AttributeValueMemberS{Value: itens[i]},
 				"Price":       &types.AttributeValueMemberN{Value: fmt.Sprintf("%.2f", price)},
 				"GSI1PK":      &types.AttributeValueMemberS{Value: fmt.Sprintf("ORDER#%s", orderId)},
-				"GSI1SK":      &types.AttributeValueMemberN{Value: fmt.Sprintf("ITEM#%s", itemId)},
+				"GSI1SK":      &types.AttributeValueMemberS{Value: fmt.Sprintf("ITEM#%s", itemId)},
 			},
 			TableName: &Dynamo.TableName,
 		}
