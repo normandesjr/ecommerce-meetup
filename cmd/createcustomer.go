@@ -54,8 +54,9 @@ func createCustomer(cmd *cobra.Command, args []string) {
 			{
 				Put: &types.Put{
 					Item: map[string]types.AttributeValue{
-						"PK": &types.AttributeValueMemberS{Value: fmt.Sprintf("CUSTOMEREMAIL#%s", email)},
-						"SK": &types.AttributeValueMemberS{Value: fmt.Sprintf("CUSTOMEREMAIL#%s", email)},
+						"PK":       &types.AttributeValueMemberS{Value: fmt.Sprintf("CUSTOMEREMAIL#%s", email)},
+						"SK":       &types.AttributeValueMemberS{Value: fmt.Sprintf("CUSTOMEREMAIL#%s", email)},
+						"Username": &types.AttributeValueMemberS{Value: username},
 					},
 					TableName:           &Dynamo.TableName,
 					ConditionExpression: aws.String("attribute_not_exists(PK)"),
