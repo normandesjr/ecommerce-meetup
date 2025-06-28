@@ -1,13 +1,10 @@
 package cmd
 
 import (
-	"context"
-	"log"
+	"meetup/repository"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func init() {
@@ -15,43 +12,21 @@ func init() {
 }
 
 var createTableCmd = &cobra.Command{
-	Use:   "create-table",
-	Short: "Create the DynamoDB table",
-	Run:   createTable,
+	Use:          "create-table",
+	Aliases:      []string{"ct"},
+	Short:        "Create the DynamoDB table",
+	SilenceUsage: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		profile := viper.GetString("profile")
+		return createTable(profile)
+	},
 }
 
-func createTable(cmd *cobra.Command, args []string) {
-	param := &dynamodb.CreateTableInput{
-		AttributeDefinitions: []types.AttributeDefinition{
-			{
-				AttributeName: aws.String("PK"),
-				AttributeType: types.ScalarAttributeTypeS,
-			},
-			{
-				AttributeName: aws.String("SK"),
-				AttributeType: types.ScalarAttributeTypeS,
-			},
-		},
-		KeySchema: []types.KeySchemaElement{
-			{
-				AttributeName: aws.String("PK"),
-				KeyType:       types.KeyTypeHash,
-			},
-			{
-				AttributeName: aws.String("SK"),
-				KeyType:       types.KeyTypeRange,
-			},
-		},
-		ProvisionedThroughput: &types.ProvisionedThroughput{
-			ReadCapacityUnits:  aws.Int64(1),
-			WriteCapacityUnits: aws.Int64(1),
-		},
-		TableName: aws.String(Dynamo.TableName),
+func createTable(profile string) error {
+	repo, err := repository.NewDynamoDBRepo(profile)
+	if err != nil {
+		return err
 	}
 
-	_, err := Dynamo.DynamoDbClient.CreateTable(context.TODO(), param)
-	if err != nil {
-		log.Fatalf("Got error calling CreateTable: %v", err)
-	}
-	log.Println("Table is created")
+	return repo.CreateTable()
 }

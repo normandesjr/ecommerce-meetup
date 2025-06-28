@@ -1,0 +1,60 @@
+package repository
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+)
+
+func (d *dynamoDBRepo) CreateTable() error {
+	param := &dynamodb.CreateTableInput{
+		AttributeDefinitions: []types.AttributeDefinition{
+			{
+				AttributeName: aws.String("PK"),
+				AttributeType: types.ScalarAttributeTypeS,
+			},
+			{
+				AttributeName: aws.String("SK"),
+				AttributeType: types.ScalarAttributeTypeS,
+			},
+		},
+		KeySchema: []types.KeySchemaElement{
+			{
+				AttributeName: aws.String("PK"),
+				KeyType:       types.KeyTypeHash,
+			},
+			{
+				AttributeName: aws.String("SK"),
+				KeyType:       types.KeyTypeRange,
+			},
+		},
+		BillingMode: types.BillingModePayPerRequest,
+		TableName:   d.tableName,
+	}
+
+	_, err := d.client.CreateTable(context.TODO(), param)
+	if err != nil {
+		var resourceInUseErr *types.ResourceInUseException
+		if errors.As(err, &resourceInUseErr) {
+			fmt.Printf("Table %s already exists\n", *d.tableName)
+			return nil
+		}
+		return err
+	}
+
+	waiter := dynamodb.NewTableExistsWaiter(d.client)
+	err = waiter.Wait(context.TODO(), &dynamodb.DescribeTableInput{
+		TableName: d.tableName}, 5*time.Minute)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Table %s created\n", *d.tableName)
+
+	return nil
+}
