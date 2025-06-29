@@ -22,6 +22,14 @@ func (d *dynamoDBRepo) CreateTable(ctx context.Context) error {
 				AttributeName: aws.String("SK"),
 				AttributeType: types.ScalarAttributeTypeS,
 			},
+			{
+				AttributeName: aws.String("GSI1PK"),
+				AttributeType: types.ScalarAttributeTypeS,
+			},
+			{
+				AttributeName: aws.String("GSI1SK"),
+				AttributeType: types.ScalarAttributeTypeS,
+			},
 		},
 		KeySchema: []types.KeySchemaElement{
 			{
@@ -35,6 +43,28 @@ func (d *dynamoDBRepo) CreateTable(ctx context.Context) error {
 		},
 		BillingMode: types.BillingModePayPerRequest,
 		TableName:   aws.String(d.tableName),
+		GlobalSecondaryIndexes: []types.GlobalSecondaryIndex{
+			{
+				IndexName: aws.String("GSI1"),
+				OnDemandThroughput: &types.OnDemandThroughput{
+					MaxReadRequestUnits:  aws.Int64(5),
+					MaxWriteRequestUnits: aws.Int64(5),
+				},
+				Projection: &types.Projection{
+					ProjectionType: types.ProjectionTypeAll,
+				},
+				KeySchema: []types.KeySchemaElement{
+					{
+						AttributeName: aws.String("GSI1PK"),
+						KeyType:       types.KeyTypeHash,
+					},
+					{
+						AttributeName: aws.String("GSI1SK"),
+						KeyType:       types.KeyTypeRange,
+					},
+				},
+			},
+		},
 	}
 
 	_, err := d.client.CreateTable(ctx, param)
