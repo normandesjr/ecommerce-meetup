@@ -24,6 +24,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringP("profile", "p", "", "AWS profile")
+	rootCmd.PersistentFlags().StringP("table", "t", "CloudDayTable", "DynamoDB table name")
 
 	replacer := strings.NewReplacer("-", "_")
 	viper.SetEnvKeyReplacer(replacer)
@@ -31,6 +32,7 @@ func init() {
 	viper.AutomaticEnv()
 
 	viper.BindPFlag("profile", rootCmd.PersistentFlags().Lookup("profile"))
+	viper.BindPFlag("table", rootCmd.PersistentFlags().Lookup("table"))
 }
 
 func initConfig() {

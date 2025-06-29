@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -9,12 +10,17 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
+var (
+	ErrTableAlreadyExists    = errors.New("table already exists")
+	ErrCustomerAlreadyExists = errors.New("customer username or email already exists")
+)
+
 type dynamoDBRepo struct {
 	client    *dynamodb.Client
 	tableName *string
 }
 
-func NewDynamoDBRepo(profile string) (*dynamoDBRepo, error) {
+func NewDynamoDBRepo(profile, tableName string) (*dynamoDBRepo, error) {
 	config, err := config.LoadDefaultConfig(context.TODO(), func(lo *config.LoadOptions) error {
 		lo.SharedConfigProfile = profile
 		return nil
@@ -24,8 +30,9 @@ func NewDynamoDBRepo(profile string) (*dynamoDBRepo, error) {
 	}
 
 	client := dynamodb.NewFromConfig(config)
+
 	return &dynamoDBRepo{
 		client:    client,
-		tableName: aws.String("ECommerceCloudDay"),
+		tableName: aws.String(tableName),
 	}, nil
 }

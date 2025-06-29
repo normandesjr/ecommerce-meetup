@@ -1,15 +1,35 @@
-## Delete Table
+# ECommerce DynamoDB Modeling
 
-- go run main.go delete-table
+## AWS Profile
+
+You should use an AWS Profile to connect to AWS and use the commands.
+
+You can pass to CLI using `-profile`, `-p` or via environment variable `CDAY_PROFILE`.
+
+All the commands bellow expect the environment variable to be set, be sure to export it.
+
+```sh
+export CDAY_PROFILE=profile
+```
 
 ## Create Table
 
-- go run main.go create-table-gsi
+The table will be named "CloudDayTable" unless you define the flag `-table` or via environment variable `CDAY_TABLE`.
+
+```sh
+go run main.go create-table
+```
 
 ## Create Customers
 
-- go run main.go create-customer --email normandes@email.com --username normandesjr --name "Normandes Junior"
-- go run main.go create-customer --email sarah@email.com --username sarahmamede --name "Sarah Mamede"
+```sh
+go run main.go create-customer --email normandes@email.com --username normandesjr --name "Normandes Junior"
+go run main.go create-customer --email sarah@email.com --username sarahmamede --name "Sarah Mamede"
+```
+
+## Delete Table
+
+go run main.go delete-table
 
 ## Add Addresses
 

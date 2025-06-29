@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"errors"
+	"fmt"
 	"meetup/repository"
 
 	"github.com/spf13/cobra"
@@ -18,15 +20,24 @@ var createTableCmd = &cobra.Command{
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		profile := viper.GetString("profile")
-		return createTable(profile)
+		tableName := viper.GetString("table")
+		return createTable(profile, tableName)
 	},
 }
 
-func createTable(profile string) error {
-	repo, err := repository.NewDynamoDBRepo(profile)
+func createTable(profile, tableName string) error {
+	repo, err := repository.NewDynamoDBRepo(profile, tableName)
 	if err != nil {
 		return err
 	}
 
-	return repo.CreateTable()
+	err = repo.CreateTable()
+	if errors.Is(err, repository.ErrTableAlreadyExists) {
+		fmt.Printf("Table %s already exists\n", tableName)
+		return nil
+	}
+
+	fmt.Printf("Table %s created\n", tableName)
+
+	return err
 }

@@ -41,8 +41,7 @@ func (d *dynamoDBRepo) CreateTable() error {
 	if err != nil {
 		var resourceInUseErr *types.ResourceInUseException
 		if errors.As(err, &resourceInUseErr) {
-			fmt.Printf("Table %s already exists\n", *d.tableName)
-			return nil
+			return fmt.Errorf("%w", ErrTableAlreadyExists)
 		}
 		return err
 	}
@@ -53,8 +52,6 @@ func (d *dynamoDBRepo) CreateTable() error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("Table %s created\n", *d.tableName)
 
 	return nil
 }
