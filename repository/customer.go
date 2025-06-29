@@ -12,30 +12,36 @@ import (
 )
 
 func (d *dynamoDBRepo) CreateCustomer(ctx context.Context, customer Customer) error {
+	customer.PK = fmt.Sprintf("CUSTOMER#%s", customer.Username)
+	customer.SK = fmt.Sprintf("CUSTOMER#%s", customer.Username)
+	customer.Addresses = make(map[string]Address)
+	mashaledCustomer, err := attributevalue.MarshalMap(customer)
+	if err != nil {
+		return err
+	}
+
+	customerEmail := CustomerEmail{
+		PK:       fmt.Sprintf("CUSTOMEREMAIL#%s", customer.Email),
+		SK:       fmt.Sprintf("CUSTOMEREMAIL#%s", customer.Email),
+		Username: customer.Username,
+	}
+	marshaledCustomerEmail, err := attributevalue.MarshalMap(customerEmail)
+	if err != nil {
+		return err
+	}
+
 	transactWriteItems := &dynamodb.TransactWriteItemsInput{
 		TransactItems: []types.TransactWriteItem{
 			{
-				// TODO: Deve ter como usar o dynamodbav da entidade... melhorar.
 				Put: &types.Put{
-					Item: map[string]types.AttributeValue{
-						"PK":        &types.AttributeValueMemberS{Value: fmt.Sprintf("CUSTOMER#%s", customer.Username)},
-						"SK":        &types.AttributeValueMemberS{Value: fmt.Sprintf("CUSTOMER#%s", customer.Username)},
-						"username":  &types.AttributeValueMemberS{Value: customer.Username},
-						"email":     &types.AttributeValueMemberS{Value: customer.Email},
-						"name":      &types.AttributeValueMemberS{Value: customer.Name},
-						"addresses": &types.AttributeValueMemberM{Value: nil},
-					},
+					Item:                mashaledCustomer,
 					TableName:           aws.String(d.tableName),
 					ConditionExpression: aws.String("attribute_not_exists(PK)"),
 				},
 			},
 			{
 				Put: &types.Put{
-					Item: map[string]types.AttributeValue{
-						"PK":       &types.AttributeValueMemberS{Value: fmt.Sprintf("CUSTOMEREMAIL#%s", customer.Email)},
-						"SK":       &types.AttributeValueMemberS{Value: fmt.Sprintf("CUSTOMEREMAIL#%s", customer.Email)},
-						"username": &types.AttributeValueMemberS{Value: customer.Username},
-					},
+					Item:                marshaledCustomerEmail,
 					TableName:           aws.String(d.tableName),
 					ConditionExpression: aws.String("attribute_not_exists(PK)"),
 				},
@@ -43,7 +49,7 @@ func (d *dynamoDBRepo) CreateCustomer(ctx context.Context, customer Customer) er
 		},
 	}
 
-	_, err := d.client.TransactWriteItems(ctx, transactWriteItems)
+	_, err = d.client.TransactWriteItems(ctx, transactWriteItems)
 	if err != nil {
 		var transactionCanceledException *types.TransactionCanceledException
 		if errors.As(err, &transactionCanceledException) {

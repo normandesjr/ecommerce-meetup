@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -26,45 +25,56 @@ func (d *dynamoDBRepo) CreateOrder(ctx context.Context, customer *Customer, item
 	total := items.Total()
 
 	transactItems := make([]types.TransactWriteItem, len(items)+1)
+
+	order := Order{
+		PK:        fmt.Sprintf("CUSTOMER#%s", customer.Username),
+		SK:        fmt.Sprintf("#ORDER#%s", orderId),
+		Id:        orderId,
+		CreatedAt: time.Now().UTC().Format(time.RFC3339),
+		Status:    "PENDING",
+		ShippedTo: addressToShip,
+		Total:     total,
+		GSI1PK:    fmt.Sprintf("ORDER#%s", orderId),
+		GSI1SK:    fmt.Sprintf("ORDER#%s", orderId),
+	}
+	marshaledOrder, err := attributevalue.MarshalMap(order)
+	if err != nil {
+		return err
+	}
+
 	transactItems[0] = types.TransactWriteItem{
 		Put: &types.Put{
-			Item: map[string]types.AttributeValue{
-				"PK":        &types.AttributeValueMemberS{Value: fmt.Sprintf("CUSTOMER#%s", customer.Username)},
-				"SK":        &types.AttributeValueMemberS{Value: fmt.Sprintf("#ORDER#%s", orderId)},
-				"orderId":   &types.AttributeValueMemberS{Value: orderId},
-				"createdAt": &types.AttributeValueMemberS{Value: time.Now().UTC().Format(time.RFC3339)},
-				"status":    &types.AttributeValueMemberS{Value: "PENDING"},
-				"shippedTo": &types.AttributeValueMemberS{Value: addressToShip},
-				"total":     &types.AttributeValueMemberN{Value: strconv.Itoa(total)},
-				"GSI1PK":    &types.AttributeValueMemberS{Value: fmt.Sprintf("ORDER#%s", orderId)},
-				"GSI1SK":    &types.AttributeValueMemberS{Value: fmt.Sprintf("ORDER#%s", orderId)},
-			},
+			Item:                marshaledOrder,
 			TableName:           aws.String(d.tableName),
 			ConditionExpression: aws.String("attribute_not_exists(PK)"),
 		},
 	}
 
-	for i := 0; i < len(items); i++ {
-		item := items[i]
+	for i, v := range items {
+		item := OrderItem{
+			PK:          fmt.Sprintf("ORDER#%s#ITEM#%s", orderId, v.Id),
+			SK:          fmt.Sprintf("ORDER#%s#ITEM#%s", orderId, v.Id),
+			OrderId:     orderId,
+			Description: v.Description,
+			Price:       v.Price,
+			GSI1PK:      fmt.Sprintf("ORDER#%s", orderId),
+			GSI1SK:      fmt.Sprintf("ITEM#%s", v.Id),
+		}
+		marshaledItem, err := attributevalue.MarshalMap(item)
+		if err != nil {
+			return err
+		}
+
 		transactItems[i+1] = types.TransactWriteItem{
 			Put: &types.Put{
-				Item: map[string]types.AttributeValue{
-					"PK":          &types.AttributeValueMemberS{Value: fmt.Sprintf("ORDER#%s#ITEM#%s", orderId, item.Id)},
-					"SK":          &types.AttributeValueMemberS{Value: fmt.Sprintf("ORDER#%s#ITEM#%s", orderId, item.Id)},
-					"orderId":     &types.AttributeValueMemberS{Value: orderId},
-					"itemId":      &types.AttributeValueMemberS{Value: item.Id},
-					"description": &types.AttributeValueMemberS{Value: item.Description},
-					"price":       &types.AttributeValueMemberN{Value: strconv.Itoa(item.Price)},
-					"GSI1PK":      &types.AttributeValueMemberS{Value: fmt.Sprintf("ORDER#%s", orderId)},
-					"GSI1SK":      &types.AttributeValueMemberS{Value: fmt.Sprintf("ITEM#%s", item.Id)},
-				},
+				Item:                marshaledItem,
 				TableName:           aws.String(d.tableName),
 				ConditionExpression: aws.String("attribute_not_exists(PK)"),
 			},
 		}
 	}
 
-	_, err := d.client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{TransactItems: transactItems})
+	_, err = d.client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{TransactItems: transactItems})
 	if err != nil {
 		return err
 	}
