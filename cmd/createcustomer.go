@@ -11,7 +11,7 @@ import (
 )
 
 var createCustomerCmd = &cobra.Command{
-	Use:          "create-customer --username <username> --email <email> --name <name>",
+	Use:          "create-customer",
 	Aliases:      []string{"cc"},
 	Short:        "Save new customer to DynamoDB table",
 	SilenceUsage: true,

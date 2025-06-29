@@ -76,6 +76,7 @@ func (d *dynamoDBRepo) CreateTable(ctx context.Context) error {
 		return err
 	}
 
+	// TODO: Pensar como podemos fazer para adicionar uma comunicação via channel e ticker para mostrar um ... na tela enquanto cria
 	waiter := dynamodb.NewTableExistsWaiter(d.client)
 	err = waiter.Wait(ctx, &dynamodb.DescribeTableInput{
 		TableName: aws.String(d.tableName)}, 5*time.Minute)

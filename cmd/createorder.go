@@ -1,38 +1,59 @@
 package cmd
 
-// import (
-// 	"context"
-// 	"fmt"
-// 	"log"
-// 	"math/rand"
-// 	"time"
+import (
+	"fmt"
 
-// 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-// 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-// 	"github.com/segmentio/ksuid"
-// 	"github.com/spf13/cobra"
-// )
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
 
-// var customer string
-// var amount float64
-// var addItems bool
+var createOrderCmd = &cobra.Command{
+	Use:          "create-order",
+	Aliases:      []string{"co"},
+	Short:        "Create an order for the choosed items",
+	SilenceUsage: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		profile := viper.GetString("profile")
+		tableName := viper.GetString("table")
 
-// func init() {
-// 	createOrderCmd.Flags().StringVar(&customer, "customer", "", "The customer to save the order")
-// 	createOrderCmd.MarkFlagRequired("customer")
+		username, err := cmd.Flags().GetString("username")
+		if err != nil {
+			return err
+		}
+		shipAddress, err := cmd.Flags().GetString("ship-address")
+		if err != nil {
+			return err
+		}
+		items, err := cmd.Flags().GetStringSlice("items")
+		if err != nil {
+			return err
+		}
 
-// 	createOrderCmd.Flags().Float64Var(&amount, "amount", 0, "The order amount")
-// 	createOrderCmd.MarkFlagRequired("amount")
+		fmt.Println(username)
+		fmt.Println(shipAddress)
+		fmt.Printf("%d: %v\n", len(items), items)
 
-// 	createOrderCmd.Flags().BoolVar(&addItems, "add-items", false, "Add 2 items to order")
-// 	rootCmd.AddCommand(createOrderCmd)
-// }
+		return createOrder(profile, tableName)
+	},
+}
 
-// var createOrderCmd = &cobra.Command{
-// 	Use:   "create-order",
-// 	Short: "Create an order",
-// 	Run:   createOrder,
-// }
+func init() {
+	createOrderCmd.Flags().StringP("username", "u", "", "The username to save")
+	createOrderCmd.MarkFlagRequired("username")
+
+	createOrderCmd.Flags().StringP("ship-address", "a", "", "The address id to ship the order")
+	createOrderCmd.MarkFlagRequired("ship-address")
+
+	createOrderCmd.Flags().StringSliceP("items", "i", nil, "The items id as comma list to add")
+	createOrderCmd.MarkFlagRequired("items")
+
+	rootCmd.AddCommand(createOrderCmd)
+}
+
+func createOrder(profile, tableName string) error {
+
+	return nil
+}
 
 // func createOrder(cmd *cobra.Command, args []string) {
 // 	log.Println("Creating order...")
