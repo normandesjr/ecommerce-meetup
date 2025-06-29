@@ -24,7 +24,8 @@ type Order struct {
 	Id        string `dynamodbav:"orderId"`
 	CreatedAt string `dynamodbav:"createdAt"`
 	Status    string `dynamodbav:"status"`
-	Total     string `dynamodbav:"total"`
+	Total     int    `dynamodbav:"total"`
+	ShippedTo string `dynamodbav:"shippedTo"`
 }
 
 type OrderItem struct {

@@ -35,7 +35,7 @@ var createOrderCmd = &cobra.Command{
 }
 
 func init() {
-	createOrderCmd.Flags().StringP("username", "u", "", "The username to save")
+	createOrderCmd.Flags().StringP("username", "u", "", "The username used to create the order")
 	createOrderCmd.MarkFlagRequired("username")
 
 	createOrderCmd.Flags().StringP("ship-address", "a", "", "The address id to ship the order")
