@@ -10,7 +10,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "cloudday",
+	Use:   "cloudday --profile <profile> --table <table name>",
 	Short: "CloudDay Triângulo",
 }
 

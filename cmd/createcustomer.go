@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"meetup/repository"
@@ -10,7 +11,7 @@ import (
 )
 
 var createCustomerCmd = &cobra.Command{
-	Use:          "create-customer username=<username> email=<email> name=<name>",
+	Use:          "create-customer --username <username> --email <email> --name <name>",
 	Aliases:      []string{"cc"},
 	Short:        "Save new customer to DynamoDB table",
 	SilenceUsage: true,
@@ -58,7 +59,7 @@ func createCustomer(profile, tableName string, customer repository.Customer) err
 		return err
 	}
 
-	err = repo.CreateCustomer(customer)
+	err = repo.CreateCustomer(context.Background(), customer)
 	if errors.Is(err, repository.ErrCustomerAlreadyExists) {
 		fmt.Println(err)
 		return nil

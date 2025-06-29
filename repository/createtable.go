@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
-func (d *dynamoDBRepo) CreateTable() error {
+func (d *dynamoDBRepo) CreateTable(ctx context.Context) error {
 	param := &dynamodb.CreateTableInput{
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
@@ -34,10 +34,10 @@ func (d *dynamoDBRepo) CreateTable() error {
 			},
 		},
 		BillingMode: types.BillingModePayPerRequest,
-		TableName:   d.tableName,
+		TableName:   aws.String(d.tableName),
 	}
 
-	_, err := d.client.CreateTable(context.TODO(), param)
+	_, err := d.client.CreateTable(ctx, param)
 	if err != nil {
 		var resourceInUseErr *types.ResourceInUseException
 		if errors.As(err, &resourceInUseErr) {
@@ -47,8 +47,8 @@ func (d *dynamoDBRepo) CreateTable() error {
 	}
 
 	waiter := dynamodb.NewTableExistsWaiter(d.client)
-	err = waiter.Wait(context.TODO(), &dynamodb.DescribeTableInput{
-		TableName: d.tableName}, 5*time.Minute)
+	err = waiter.Wait(ctx, &dynamodb.DescribeTableInput{
+		TableName: aws.String(d.tableName)}, 5*time.Minute)
 	if err != nil {
 		return err
 	}

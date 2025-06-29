@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"meetup/repository"
@@ -31,7 +32,7 @@ func createTable(profile, tableName string) error {
 		return err
 	}
 
-	err = repo.CreateTable()
+	err = repo.CreateTable(context.Background())
 	if errors.Is(err, repository.ErrTableAlreadyExists) {
 		fmt.Printf("Table %s already exists\n", tableName)
 		return nil

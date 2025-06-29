@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
@@ -17,7 +16,7 @@ var (
 
 type dynamoDBRepo struct {
 	client    *dynamodb.Client
-	tableName *string
+	tableName string
 }
 
 func NewDynamoDBRepo(profile, tableName string) (*dynamoDBRepo, error) {
@@ -33,6 +32,6 @@ func NewDynamoDBRepo(profile, tableName string) (*dynamoDBRepo, error) {
 
 	return &dynamoDBRepo{
 		client:    client,
-		tableName: aws.String(tableName),
+		tableName: tableName,
 	}, nil
 }
