@@ -12,6 +12,7 @@ import (
 var (
 	ErrTableAlreadyExists    = errors.New("table already exists")
 	ErrCustomerAlreadyExists = errors.New("customer username or email already exists")
+	ErrCustomerNotFound      = errors.New("customer not found")
 )
 
 type dynamoDBRepo struct {

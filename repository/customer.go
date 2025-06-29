@@ -6,12 +6,13 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
 func (d *dynamoDBRepo) CreateCustomer(ctx context.Context, customer Customer) error {
-	param := &dynamodb.TransactWriteItemsInput{
+	transactWriteItems := &dynamodb.TransactWriteItemsInput{
 		TransactItems: []types.TransactWriteItem{
 			{
 				// TODO: Deve ter como usar o dynamodbav da entidade... melhorar.
@@ -42,7 +43,7 @@ func (d *dynamoDBRepo) CreateCustomer(ctx context.Context, customer Customer) er
 		},
 	}
 
-	_, err := d.client.TransactWriteItems(ctx, param)
+	_, err := d.client.TransactWriteItems(ctx, transactWriteItems)
 	if err != nil {
 		var transactionCanceledException *types.TransactionCanceledException
 		if errors.As(err, &transactionCanceledException) {
@@ -58,4 +59,27 @@ func (d *dynamoDBRepo) CreateCustomer(ctx context.Context, customer Customer) er
 	}
 
 	return nil
+}
+
+func (d *dynamoDBRepo) GetCustomer(ctx context.Context, username string) (*Customer, error) {
+	customer := Customer{Username: username}
+	response, err := d.client.GetItem(ctx, &dynamodb.GetItemInput{
+		Key:                  customer.GetKey(),
+		ProjectionExpression: aws.String("username"),
+		TableName:            aws.String(d.tableName),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(response.Item) == 0 {
+		return nil, ErrCustomerNotFound
+	}
+
+	err = attributevalue.UnmarshalMap(response.Item, &customer)
+	if err != nil {
+		return nil, err
+	}
+
+	return &customer, nil
 }

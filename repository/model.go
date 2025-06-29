@@ -24,14 +24,16 @@ type Order struct {
 	Id        string `dynamodbav:"orderId"`
 	CreatedAt string `dynamodbav:"createdAt"`
 	Status    string `dynamodbav:"status"`
-	Amount    string `dynamodbav:"amount"`
+	Total     string `dynamodbav:"total"`
 }
 
 type OrderItem struct {
 	Id          string `dynamodbav:"itemId"`
 	Description string `dynamodbav:"description"`
-	Price       string `dynamodbav:"price"`
+	Price       int    `dynamodbav:"price"`
 }
+
+type OrderItems []OrderItem
 
 func (customer Customer) GetKey() map[string]types.AttributeValue {
 	//TODO: Melhorar essa constante CUSTOMER#
@@ -50,14 +52,11 @@ func (customer Customer) GetKey() map[string]types.AttributeValue {
 	return map[string]types.AttributeValue{"PK": pk, "SK": sk}
 }
 
-func (c Customer) String() string {
-	return fmt.Sprintf("Username: %s - Email: %s - Name: %s", c.Username, c.Email, c.Name)
-}
+func (items OrderItems) Total() int {
+	total := 0
+	for _, i := range items {
+		total += i.Price
+	}
 
-func (o Order) String() string {
-	return fmt.Sprintf("Id: %s - CreatedAt: %s - Status: %s - Amount: %s", o.Id, o.CreatedAt, o.Status, o.Amount)
-}
-
-func (o OrderItem) String() string {
-	return fmt.Sprintf("Id: %s - Description: %s - Price: %s", o.Id, o.Description, o.Price)
+	return total
 }
