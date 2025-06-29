@@ -85,7 +85,19 @@ func (d *dynamoDBRepo) CreateOrder(ctx context.Context, customer *Customer, item
 func (d *dynamoDBRepo) GetOrders(ctx context.Context, customer *Customer) ([]Order, error) {
 	keyEx := expression.Key("PK").Equal(expression.Value(fmt.Sprintf("CUSTOMER#%s", customer.Username))).
 		And(expression.Key("SK").BeginsWith("#ORDER#"))
-	expr, err := expression.NewBuilder().WithKeyCondition(keyEx).Build()
+
+	proj := expression.NamesList(
+		expression.Name("createdAt"),
+		expression.Name("orderId"),
+		expression.Name("shippedTo"),
+		expression.Name("status"),
+		expression.Name("total"),
+	)
+
+	expr, err := expression.NewBuilder().
+		WithKeyCondition(keyEx).
+		WithProjection(proj).
+		Build()
 	if err != nil {
 		return nil, err
 	}
@@ -95,6 +107,7 @@ func (d *dynamoDBRepo) GetOrders(ctx context.Context, customer *Customer) ([]Ord
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 		KeyConditionExpression:    expr.KeyCondition(),
+		ProjectionExpression:      expr.Projection(),
 	})
 
 	var orders []Order
