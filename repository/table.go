@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
-func (d *dynamoDBRepo) CreateTable(ctx context.Context) error {
+func (d *dynamoDBRepo) CreateTable(ctx context.Context, action func()) error {
 	param := &dynamodb.CreateTableInput{
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
@@ -76,13 +76,25 @@ func (d *dynamoDBRepo) CreateTable(ctx context.Context) error {
 		return err
 	}
 
-	// TODO: Pensar como podemos fazer para adicionar uma comunicação via channel e ticker para mostrar um ... na tela enquanto cria
-	waiter := dynamodb.NewTableExistsWaiter(d.client)
-	err = waiter.Wait(ctx, &dynamodb.DescribeTableInput{
-		TableName: aws.String(d.tableName)}, 5*time.Minute)
-	if err != nil {
-		return err
-	}
+	errCh := make(chan error, 1)
+	ticker := time.NewTicker(250 * time.Millisecond)
+	defer ticker.Stop()
 
-	return nil
+	go func() {
+		waiter := dynamodb.NewTableExistsWaiter(d.client)
+		err = waiter.Wait(ctx, &dynamodb.DescribeTableInput{
+			TableName: aws.String(d.tableName)}, 5*time.Minute)
+		errCh <- err
+	}()
+
+	for {
+		select {
+		case err := <-errCh:
+			return err
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			action()
+		}
+	}
 }

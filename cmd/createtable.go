@@ -32,13 +32,21 @@ func createTable(profile, tableName string) error {
 		return err
 	}
 
-	err = repo.CreateTable(context.Background())
-	if errors.Is(err, repository.ErrTableAlreadyExists) {
-		fmt.Printf("Table %s already exists\n", tableName)
-		return nil
+	action := func() {
+		fmt.Printf("...")
 	}
 
-	fmt.Printf("Table %s created\n", tableName)
+	err = repo.CreateTable(context.Background(), action)
+	if err != nil {
+		if errors.Is(err, repository.ErrTableAlreadyExists) {
+			fmt.Printf("\nTable %s already exists\n", tableName)
+			return nil
+		}
 
-	return err
+		return err
+	}
+
+	fmt.Printf("\nTable %s created\n", tableName)
+
+	return nil
 }
