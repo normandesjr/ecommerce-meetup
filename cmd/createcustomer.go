@@ -2,74 +2,68 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log"
+	"meetup/repository"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-var username string
-var email string
-var name string
-
 var createCustomerCmd = &cobra.Command{
-	Use:   "create-customer",
-	Short: "Save new Customer to DynamoDB",
-	Run:   createCustomer,
+	Use:          "create-customer",
+	Aliases:      []string{"cc"},
+	Short:        "Save new customer to DynamoDB table",
+	SilenceUsage: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		profile := viper.GetString("profile")
+		tableName := viper.GetString("table")
+
+		username, err := cmd.Flags().GetString("username")
+		if err != nil {
+			return err
+		}
+		email, err := cmd.Flags().GetString("email")
+		if err != nil {
+			return err
+		}
+		name, err := cmd.Flags().GetString("name")
+		if err != nil {
+			return err
+		}
+
+		return createCustomer(profile, tableName, repository.Customer{
+			Username: username,
+			Email:    email,
+			Name:     name,
+		})
+	},
 }
 
 func init() {
-	createCustomerCmd.Flags().StringVar(&username, "username", "", "The username to save")
+	createCustomerCmd.Flags().StringP("username", "u", "", "The username to save")
 	createCustomerCmd.MarkFlagRequired("username")
 
-	createCustomerCmd.Flags().StringVar(&email, "email", "", "The email to save")
+	createCustomerCmd.Flags().StringP("email", "e", "", "The email to save")
 	createCustomerCmd.MarkFlagRequired("email")
 
-	createCustomerCmd.Flags().StringVar(&name, "name", "", "The name to save")
+	createCustomerCmd.Flags().StringP("name", "n", "", "The name to save")
 	createCustomerCmd.MarkFlagRequired("name")
+
 	rootCmd.AddCommand(createCustomerCmd)
 }
 
-func createCustomer(cmd *cobra.Command, args []string) {
-	log.Println("Saving customer...")
-	param := &dynamodb.TransactWriteItemsInput{
-		TransactItems: []types.TransactWriteItem{
-			{
-				Put: &types.Put{
-					Item: map[string]types.AttributeValue{
-						"PK":        &types.AttributeValueMemberS{Value: fmt.Sprintf("CUSTOMER#%s", username)},
-						"SK":        &types.AttributeValueMemberS{Value: fmt.Sprintf("CUSTOMER#%s", username)},
-						"Username":  &types.AttributeValueMemberS{Value: username},
-						"Email":     &types.AttributeValueMemberS{Value: email},
-						"Name":      &types.AttributeValueMemberS{Value: name},
-						"Addresses": &types.AttributeValueMemberM{Value: nil},
-					},
-					TableName:           &Dynamo.TableName,
-					ConditionExpression: aws.String("attribute_not_exists(PK)"),
-				},
-			},
-			{
-				Put: &types.Put{
-					Item: map[string]types.AttributeValue{
-						"PK":       &types.AttributeValueMemberS{Value: fmt.Sprintf("CUSTOMEREMAIL#%s", email)},
-						"SK":       &types.AttributeValueMemberS{Value: fmt.Sprintf("CUSTOMEREMAIL#%s", email)},
-						"Username": &types.AttributeValueMemberS{Value: username},
-					},
-					TableName:           &Dynamo.TableName,
-					ConditionExpression: aws.String("attribute_not_exists(PK)"),
-				},
-			},
-		},
-	}
-
-	_, err := Dynamo.DynamoDbClient.TransactWriteItems(context.TODO(), param)
+func createCustomer(profile, tableName string, customer repository.Customer) error {
+	repo, err := repository.NewDynamoDBRepo(profile, tableName)
 	if err != nil {
-		log.Fatalf("Error creating customer: %v", err)
+		return err
 	}
 
-	log.Println("Customer created")
+	err = repo.CreateCustomer(context.Background(), customer)
+	if errors.Is(err, repository.ErrCustomerAlreadyExists) {
+		fmt.Println(err)
+		return nil
+	}
 
+	return err
 }

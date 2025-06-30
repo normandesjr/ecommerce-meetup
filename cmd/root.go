@@ -1,52 +1,44 @@
 package cmd
 
 import (
-	"context"
-	"log"
+	"fmt"
+	"os"
+	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "meetup",
-	Short: "Meetup AWS User Grupo Triangulo Mineiro",
-}
-
-func init() {
-	cobra.OnInitialize(loadAWSConfig)
-}
-
-type tableBasics struct {
-	DynamoDbClient *dynamodb.Client
-	TableName      string
-}
-
-var Dynamo *tableBasics
-
-func loadAWSConfig() {
-	log.Println("loading aws config...")
-	defaultConfig, err := config.LoadDefaultConfig(context.TODO(), func(lo *config.LoadOptions) error {
-		lo.SharedConfigProfile = "soudev"
-		return nil
-	})
-	if err != nil {
-		log.Fatalf("error connecting to AWS %v", err)
-	}
-
-	client := dynamodb.NewFromConfig(defaultConfig)
-	tableName := "EcommerceMeetup"
-
-	Dynamo = &tableBasics{
-		DynamoDbClient: client,
-		TableName:      tableName,
-	}
-
+	Use:   "cloudday --profile <profile> --table <table name>",
+	Short: "CloudDay Triângulo",
 }
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		log.Fatal(err)
+		os.Exit(1)
+	}
+}
+
+func init() {
+	cobra.OnInitialize(initConfig)
+
+	rootCmd.PersistentFlags().StringP("profile", "p", "", "AWS profile")
+	rootCmd.PersistentFlags().StringP("table", "t", "CloudDayTable", "DynamoDB table name")
+
+	replacer := strings.NewReplacer("-", "_")
+	viper.SetEnvKeyReplacer(replacer)
+	viper.SetEnvPrefix("CDAY")
+	viper.AutomaticEnv()
+
+	viper.BindPFlag("profile", rootCmd.PersistentFlags().Lookup("profile"))
+	viper.BindPFlag("table", rootCmd.PersistentFlags().Lookup("table"))
+}
+
+func initConfig() {
+	profile := viper.GetString("profile")
+	if profile == "" {
+		fmt.Fprintln(os.Stderr, "Error: required flag \"profile\" not set")
+		os.Exit(1)
 	}
 }

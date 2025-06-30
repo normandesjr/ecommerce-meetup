@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"context"
-	"log"
+	"errors"
+	"fmt"
+	"meetup/repository"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func init() {
@@ -15,43 +15,38 @@ func init() {
 }
 
 var createTableCmd = &cobra.Command{
-	Use:   "create-table",
-	Short: "Create the DynamoDB table",
-	Run:   createTable,
+	Use:          "create-table",
+	Aliases:      []string{"ct"},
+	Short:        "Create the DynamoDB table",
+	SilenceUsage: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		profile := viper.GetString("profile")
+		tableName := viper.GetString("table")
+		return createTable(profile, tableName)
+	},
 }
 
-func createTable(cmd *cobra.Command, args []string) {
-	param := &dynamodb.CreateTableInput{
-		AttributeDefinitions: []types.AttributeDefinition{
-			{
-				AttributeName: aws.String("PK"),
-				AttributeType: types.ScalarAttributeTypeS,
-			},
-			{
-				AttributeName: aws.String("SK"),
-				AttributeType: types.ScalarAttributeTypeS,
-			},
-		},
-		KeySchema: []types.KeySchemaElement{
-			{
-				AttributeName: aws.String("PK"),
-				KeyType:       types.KeyTypeHash,
-			},
-			{
-				AttributeName: aws.String("SK"),
-				KeyType:       types.KeyTypeRange,
-			},
-		},
-		ProvisionedThroughput: &types.ProvisionedThroughput{
-			ReadCapacityUnits:  aws.Int64(1),
-			WriteCapacityUnits: aws.Int64(1),
-		},
-		TableName: aws.String(Dynamo.TableName),
+func createTable(profile, tableName string) error {
+	repo, err := repository.NewDynamoDBRepo(profile, tableName)
+	if err != nil {
+		return err
 	}
 
-	_, err := Dynamo.DynamoDbClient.CreateTable(context.TODO(), param)
-	if err != nil {
-		log.Fatalf("Got error calling CreateTable: %v", err)
+	action := func() {
+		fmt.Printf("...")
 	}
-	log.Println("Table is created")
+
+	err = repo.CreateTable(context.Background(), action)
+	if err != nil {
+		if errors.Is(err, repository.ErrTableAlreadyExists) {
+			fmt.Printf("\nTable %s already exists\n", tableName)
+			return nil
+		}
+
+		return err
+	}
+
+	fmt.Printf("\nTable %s created\n", tableName)
+
+	return nil
 }

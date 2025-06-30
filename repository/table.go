@@ -1,26 +1,17 @@
-package cmd
+package repository
 
 import (
 	"context"
-	"log"
+	"errors"
+	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/spf13/cobra"
 )
 
-func init() {
-	rootCmd.AddCommand(createTableGsiCmd)
-}
-
-var createTableGsiCmd = &cobra.Command{
-	Use:   "create-table-gsi",
-	Short: "Create the DynamoDB table with GSI",
-	Run:   createTableWithGsi,
-}
-
-func createTableWithGsi(cmd *cobra.Command, args []string) {
+func (d *dynamoDBRepo) CreateTable(ctx context.Context, action func()) error {
 	param := &dynamodb.CreateTableInput{
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
@@ -50,15 +41,15 @@ func createTableWithGsi(cmd *cobra.Command, args []string) {
 				KeyType:       types.KeyTypeRange,
 			},
 		},
-		ProvisionedThroughput: &types.ProvisionedThroughput{
-			ReadCapacityUnits:  aws.Int64(1),
-			WriteCapacityUnits: aws.Int64(1),
-		},
-		TableName: aws.String(Dynamo.TableName),
-
+		BillingMode: types.BillingModePayPerRequest,
+		TableName:   aws.String(d.tableName),
 		GlobalSecondaryIndexes: []types.GlobalSecondaryIndex{
 			{
 				IndexName: aws.String("GSI1"),
+				OnDemandThroughput: &types.OnDemandThroughput{
+					MaxReadRequestUnits:  aws.Int64(5),
+					MaxWriteRequestUnits: aws.Int64(5),
+				},
 				Projection: &types.Projection{
 					ProjectionType: types.ProjectionTypeAll,
 				},
@@ -72,17 +63,38 @@ func createTableWithGsi(cmd *cobra.Command, args []string) {
 						KeyType:       types.KeyTypeRange,
 					},
 				},
-				ProvisionedThroughput: &types.ProvisionedThroughput{
-					ReadCapacityUnits:  aws.Int64(1),
-					WriteCapacityUnits: aws.Int64(1),
-				},
 			},
 		},
 	}
 
-	_, err := Dynamo.DynamoDbClient.CreateTable(context.TODO(), param)
+	_, err := d.client.CreateTable(ctx, param)
 	if err != nil {
-		log.Fatalf("Got error calling CreateTable: %v", err)
+		var resourceInUseErr *types.ResourceInUseException
+		if errors.As(err, &resourceInUseErr) {
+			return fmt.Errorf("%w", ErrTableAlreadyExists)
+		}
+		return err
 	}
-	log.Println("Table is created")
+
+	errCh := make(chan error, 1)
+	ticker := time.NewTicker(250 * time.Millisecond)
+	defer ticker.Stop()
+
+	go func() {
+		waiter := dynamodb.NewTableExistsWaiter(d.client)
+		err = waiter.Wait(ctx, &dynamodb.DescribeTableInput{
+			TableName: aws.String(d.tableName)}, 5*time.Minute)
+		errCh <- err
+	}()
+
+	for {
+		select {
+		case err := <-errCh:
+			return err
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			action()
+		}
+	}
 }
