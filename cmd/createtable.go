@@ -10,10 +10,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-func init() {
-	rootCmd.AddCommand(createTableCmd)
-}
-
 var createTableCmd = &cobra.Command{
 	Use:          "create-table",
 	Aliases:      []string{"ct"},
@@ -24,6 +20,10 @@ var createTableCmd = &cobra.Command{
 		tableName := viper.GetString("table")
 		return createTable(profile, tableName)
 	},
+}
+
+func init() {
+	rootCmd.AddCommand(createTableCmd)
 }
 
 func createTable(profile, tableName string) error {

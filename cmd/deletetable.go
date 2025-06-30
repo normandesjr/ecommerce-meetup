@@ -1,29 +1,47 @@
 package cmd
 
-// import (
-// 	"context"
-// 	"log"
+import (
+	"context"
+	"fmt"
+	"meetup/repository"
 
-// 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-// 	"github.com/spf13/cobra"
-// )
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
 
-// func init() {
-// 	rootCmd.AddCommand(deleteTableCmd)
-// }
+var deleteTableCmd = &cobra.Command{
+	Use:          "delete-table",
+	Aliases:      []string{"dt"},
+	Short:        "Delete the DynamoDB table",
+	SilenceUsage: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		profile := viper.GetString("profile")
+		tableName := viper.GetString("table")
 
-// var deleteTableCmd = &cobra.Command{
-// 	Use:   "delete-table",
-// 	Short: "Delete the DynamoDB table",
-// 	Run:   deleteTable,
-// }
+		return deleteTable(profile, tableName)
+	},
+}
 
-// func deleteTable(cmd *cobra.Command, args []string) {
-// 	_, err := Dynamo.DynamoDbClient.DeleteTable(context.TODO(), &dynamodb.DeleteTableInput{
-// 		TableName: &Dynamo.TableName,
-// 	})
-// 	if err != nil {
-// 		log.Fatalf("Got error calling DeleteTable: %v", err)
-// 	}
-// 	log.Println("Table is deleted")
-// }
+func init() {
+	rootCmd.AddCommand(deleteTableCmd)
+}
+
+func deleteTable(profile, tableName string) error {
+	repo, err := repository.NewDynamoDBRepo(profile, tableName)
+	if err != nil {
+		return err
+	}
+
+	action := func() {
+		fmt.Printf("...")
+	}
+
+	err = repo.DeleteTable(context.Background(), action)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("\nTable %s deleted\n", tableName)
+
+	return nil
+}

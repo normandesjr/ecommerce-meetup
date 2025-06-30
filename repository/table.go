@@ -76,15 +76,69 @@ func (d *dynamoDBRepo) CreateTable(ctx context.Context, action func()) error {
 		return err
 	}
 
+	// errCh := make(chan error, 1)
+	// ticker := time.NewTicker(250 * time.Millisecond)
+	// defer ticker.Stop()
+
+	waiterFunc := func(ctx context.Context) error {
+		waiter := dynamodb.NewTableExistsWaiter(d.client)
+		return waiter.Wait(ctx, &dynamodb.DescribeTableInput{
+			TableName: aws.String(d.tableName)}, 5*time.Minute)
+	}
+
+	return d.waitForOperation(ctx, action, waiterFunc)
+
+	// for {
+	// 	select {
+	// 	case err := <-errCh:
+	// 		return err
+	// 	case <-ctx.Done():
+	// 		return ctx.Err()
+	// 	case <-ticker.C:
+	// 		action()
+	// 	}
+	// }
+}
+
+func (d *dynamoDBRepo) DeleteTable(ctx context.Context, action func()) error {
+	_, err := d.client.DeleteTable(context.TODO(), &dynamodb.DeleteTableInput{
+		TableName: aws.String(d.tableName),
+	})
+	if err != nil {
+		return err
+	}
+
+	// errCh := make(chan error, 1)
+	// ticker := time.NewTicker(250 * time.Millisecond)
+	// defer ticker.Stop()
+
+	waiterFunc := func(ctx context.Context) error {
+		waiter := dynamodb.NewTableNotExistsWaiter(d.client)
+		return waiter.Wait(ctx, &dynamodb.DescribeTableInput{
+			TableName: aws.String(d.tableName)}, 5*time.Minute)
+	}
+
+	return d.waitForOperation(ctx, action, waiterFunc)
+
+	// for {
+	// 	select {
+	// 	case err := <-errCh:
+	// 		return err
+	// 	case <-ctx.Done():
+	// 		return ctx.Err()
+	// 	case <-ticker.C:
+	// 		action()
+	// 	}
+	// }
+}
+
+func (d *dynamoDBRepo) waitForOperation(ctx context.Context, tickerAction func(), waiterFunc func(context.Context) error) error {
 	errCh := make(chan error, 1)
 	ticker := time.NewTicker(250 * time.Millisecond)
 	defer ticker.Stop()
 
 	go func() {
-		waiter := dynamodb.NewTableExistsWaiter(d.client)
-		err = waiter.Wait(ctx, &dynamodb.DescribeTableInput{
-			TableName: aws.String(d.tableName)}, 5*time.Minute)
-		errCh <- err
+		errCh <- waiterFunc(ctx)
 	}()
 
 	for {
@@ -94,7 +148,7 @@ func (d *dynamoDBRepo) CreateTable(ctx context.Context, action func()) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
-			action()
+			tickerAction()
 		}
 	}
 }
