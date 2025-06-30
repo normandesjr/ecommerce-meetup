@@ -54,6 +54,7 @@ func (d *dynamoDBRepo) CreateOrder(ctx context.Context, customer *Customer, item
 		item := OrderItem{
 			PK:          fmt.Sprintf("ORDER#%s#ITEM#%s", orderId, v.Id),
 			SK:          fmt.Sprintf("ORDER#%s#ITEM#%s", orderId, v.Id),
+			Id:          v.Id,
 			OrderId:     orderId,
 			Description: v.Description,
 			Price:       v.Price,
