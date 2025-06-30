@@ -76,10 +76,6 @@ func (d *dynamoDBRepo) CreateTable(ctx context.Context, action func()) error {
 		return err
 	}
 
-	// errCh := make(chan error, 1)
-	// ticker := time.NewTicker(250 * time.Millisecond)
-	// defer ticker.Stop()
-
 	waiterFunc := func(ctx context.Context) error {
 		waiter := dynamodb.NewTableExistsWaiter(d.client)
 		return waiter.Wait(ctx, &dynamodb.DescribeTableInput{
@@ -87,17 +83,6 @@ func (d *dynamoDBRepo) CreateTable(ctx context.Context, action func()) error {
 	}
 
 	return d.waitForOperation(ctx, action, waiterFunc)
-
-	// for {
-	// 	select {
-	// 	case err := <-errCh:
-	// 		return err
-	// 	case <-ctx.Done():
-	// 		return ctx.Err()
-	// 	case <-ticker.C:
-	// 		action()
-	// 	}
-	// }
 }
 
 func (d *dynamoDBRepo) DeleteTable(ctx context.Context, action func()) error {
@@ -108,10 +93,6 @@ func (d *dynamoDBRepo) DeleteTable(ctx context.Context, action func()) error {
 		return err
 	}
 
-	// errCh := make(chan error, 1)
-	// ticker := time.NewTicker(250 * time.Millisecond)
-	// defer ticker.Stop()
-
 	waiterFunc := func(ctx context.Context) error {
 		waiter := dynamodb.NewTableNotExistsWaiter(d.client)
 		return waiter.Wait(ctx, &dynamodb.DescribeTableInput{
@@ -119,17 +100,6 @@ func (d *dynamoDBRepo) DeleteTable(ctx context.Context, action func()) error {
 	}
 
 	return d.waitForOperation(ctx, action, waiterFunc)
-
-	// for {
-	// 	select {
-	// 	case err := <-errCh:
-	// 		return err
-	// 	case <-ctx.Done():
-	// 		return ctx.Err()
-	// 	case <-ticker.C:
-	// 		action()
-	// 	}
-	// }
 }
 
 func (d *dynamoDBRepo) waitForOperation(ctx context.Context, tickerAction func(), waiterFunc func(context.Context) error) error {
