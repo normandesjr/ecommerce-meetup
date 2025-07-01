@@ -7,59 +7,41 @@ import (
 	"meetup/repository"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
-var createCustomerCmd = &cobra.Command{
-	Use:          "create-customer",
-	Aliases:      []string{"cc"},
-	Short:        "Save new customer to DynamoDB table",
-	SilenceUsage: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		profile := viper.GetString("profile")
-		tableName := viper.GetString("table")
+func newCreateCustomerCmd(app *App) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:          "create-customer",
+		Aliases:      []string{"cc"},
+		Short:        "Save new customer to DynamoDB table",
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			username, _ := cmd.Flags().GetString("username")
+			email, _ := cmd.Flags().GetString("email")
+			name, _ := cmd.Flags().GetString("name")
 
-		username, err := cmd.Flags().GetString("username")
-		if err != nil {
-			return err
-		}
-		email, err := cmd.Flags().GetString("email")
-		if err != nil {
-			return err
-		}
-		name, err := cmd.Flags().GetString("name")
-		if err != nil {
-			return err
-		}
-
-		return createCustomer(profile, tableName, repository.Customer{
-			Username: username,
-			Email:    email,
-			Name:     name,
-		})
-	},
-}
-
-func init() {
-	createCustomerCmd.Flags().StringP("username", "u", "", "The username to save")
-	createCustomerCmd.MarkFlagRequired("username")
-
-	createCustomerCmd.Flags().StringP("email", "e", "", "The email to save")
-	createCustomerCmd.MarkFlagRequired("email")
-
-	createCustomerCmd.Flags().StringP("name", "n", "", "The name to save")
-	createCustomerCmd.MarkFlagRequired("name")
-
-	rootCmd.AddCommand(createCustomerCmd)
-}
-
-func createCustomer(profile, tableName string, customer repository.Customer) error {
-	repo, err := repository.NewDynamoDBRepo(profile, tableName)
-	if err != nil {
-		return err
+			return createCustomer(app.repo, repository.Customer{
+				Username: username,
+				Email:    email,
+				Name:     name,
+			})
+		},
 	}
 
-	err = repo.CreateCustomer(context.Background(), customer)
+	cmd.Flags().StringP("username", "u", "", "The username to save")
+	cmd.MarkFlagRequired("username")
+
+	cmd.Flags().StringP("email", "e", "", "The email to save")
+	cmd.MarkFlagRequired("email")
+
+	cmd.Flags().StringP("name", "n", "", "The name to save")
+	cmd.MarkFlagRequired("name")
+
+	return cmd
+}
+
+func createCustomer(repo Repository, customer repository.Customer) error {
+	err := repo.CreateCustomer(context.Background(), customer)
 	if errors.Is(err, repository.ErrCustomerAlreadyExists) {
 		fmt.Println(err)
 		return nil

@@ -5,54 +5,35 @@ import (
 	"meetup/repository"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
-var createOrderCmd = &cobra.Command{
-	Use:          "create-order",
-	Aliases:      []string{"co"},
-	Short:        "Create an order for the choosed items",
-	SilenceUsage: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		profile := viper.GetString("profile")
-		tableName := viper.GetString("table")
+func newCreateOrderCmd(app *App) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:          "create-order",
+		Aliases:      []string{"co"},
+		Short:        "Create an order for the choosed items",
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			username, _ := cmd.Flags().GetString("username")
+			shipAddress, _ := cmd.Flags().GetString("ship-address")
+			itemsId, _ := cmd.Flags().GetIntSlice("items")
 
-		username, err := cmd.Flags().GetString("username")
-		if err != nil {
-			return err
-		}
-		shipAddress, err := cmd.Flags().GetString("ship-address")
-		if err != nil {
-			return err
-		}
-		itemsId, err := cmd.Flags().GetIntSlice("items")
-		if err != nil {
-			return err
-		}
-
-		return createOrder(profile, tableName, username, shipAddress, itemsId)
-	},
-}
-
-func init() {
-	createOrderCmd.Flags().StringP("username", "u", "", "The username used to create the order")
-	createOrderCmd.MarkFlagRequired("username")
-
-	createOrderCmd.Flags().StringP("ship-address", "a", "", "The address id to ship the order")
-	createOrderCmd.MarkFlagRequired("ship-address")
-
-	createOrderCmd.Flags().IntSliceP("items", "i", nil, "The items id as comma list to add [1-10]")
-	createOrderCmd.MarkFlagRequired("items")
-
-	rootCmd.AddCommand(createOrderCmd)
-}
-
-func createOrder(profile, tableName, username, shipAddress string, itemIds []int) error {
-	repo, err := repository.NewDynamoDBRepo(profile, tableName)
-	if err != nil {
-		return err
+			return createOrder(app.repo, username, shipAddress, itemsId)
+		},
 	}
+	cmd.Flags().StringP("username", "u", "", "The username used to create the order")
+	cmd.MarkFlagRequired("username")
 
+	cmd.Flags().StringP("ship-address", "a", "", "The address id to ship the order")
+	cmd.MarkFlagRequired("ship-address")
+
+	cmd.Flags().IntSliceP("items", "i", nil, "The items id as comma list to add [1-10]")
+	cmd.MarkFlagRequired("items")
+
+	return cmd
+}
+
+func createOrder(repo Repository, username, shipAddress string, itemIds []int) error {
 	customer, err := repo.GetCustomer(context.Background(), username)
 	if err != nil {
 		return err

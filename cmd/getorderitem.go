@@ -8,42 +8,28 @@ import (
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
-var getOrderItemsCmd = &cobra.Command{
-	Use:          "get-order-items",
-	Aliases:      []string{"gi"},
-	Short:        "Get the order's items",
-	SilenceUsage: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		profile := viper.GetString("profile")
-		tableName := viper.GetString("table")
+func newGetOrderItemsCmd(app *App) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:          "get-order-items",
+		Aliases:      []string{"gi"},
+		Short:        "Get the order's items",
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			orderId, _ := cmd.Flags().GetString("order-id")
 
-		orderId, err := cmd.Flags().GetString("order-id")
-		if err != nil {
-			return err
-		}
-
-		return getOrderItems(profile, tableName, orderId)
-	},
-}
-
-func init() {
-	getOrderItemsCmd.Flags().StringP("order-id", "o", "", "The order id")
-	getOrderItemsCmd.MarkFlagRequired("order-id")
-
-	// a pesquisa será feita no GSI1, a PK será o id da order e o sk começa com ITEM#
-
-	rootCmd.AddCommand(getOrderItemsCmd)
-}
-
-func getOrderItems(profile, tableName, orderId string) error {
-	repo, err := repository.NewDynamoDBRepo(profile, tableName)
-	if err != nil {
-		return err
+			return getOrderItems(app.repo, orderId)
+		},
 	}
 
+	cmd.Flags().StringP("order-id", "o", "", "The order id")
+	cmd.MarkFlagRequired("order-id")
+
+	return cmd
+}
+
+func getOrderItems(repo Repository, orderId string) error {
 	orderItems, err := repo.GetOrderItems(context.Background(), orderId)
 	if err != nil {
 		return err

@@ -3,9 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
-	"fmt"
 
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
@@ -15,24 +13,42 @@ var (
 	ErrCustomerNotFound      = errors.New("customer not found")
 )
 
+type DynamoDBAPI interface {
+	TransactWriteItems(ctx context.Context, params *dynamodb.TransactWriteItemsInput, optFns ...func(*dynamodb.Options)) (*dynamodb.TransactWriteItemsOutput, error)
+	GetItem(ctx context.Context, params *dynamodb.GetItemInput, optFns ...func(*dynamodb.Options)) (*dynamodb.GetItemOutput, error)
+	Query(ctx context.Context, params *dynamodb.QueryInput, optFns ...func(*dynamodb.Options)) (*dynamodb.QueryOutput, error)
+	UpdateItem(context.Context, *dynamodb.UpdateItemInput, ...func(*dynamodb.Options)) (*dynamodb.UpdateItemOutput, error)
+	CreateTable(ctx context.Context, params *dynamodb.CreateTableInput, optFns ...func(*dynamodb.Options)) (*dynamodb.CreateTableOutput, error)
+	DeleteTable(ctx context.Context, params *dynamodb.DeleteTableInput, optFns ...func(*dynamodb.Options)) (*dynamodb.DeleteTableOutput, error)
+	DescribeTable(context.Context, *dynamodb.DescribeTableInput, ...func(*dynamodb.Options)) (*dynamodb.DescribeTableOutput, error)
+}
+
 type dynamoDBRepo struct {
-	client    *dynamodb.Client
+	// client    *dynamodb.Client
+	client    DynamoDBAPI
 	tableName string
 }
 
-func NewDynamoDBRepo(profile, tableName string) (*dynamoDBRepo, error) {
-	config, err := config.LoadDefaultConfig(context.TODO(), func(lo *config.LoadOptions) error {
-		lo.SharedConfigProfile = profile
-		return nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("connecting to AWS using the profile %q: %v", profile, err)
-	}
-
-	client := dynamodb.NewFromConfig(config)
-
+func NewDynamoDBRepo(client DynamoDBAPI, tableName string) (*dynamoDBRepo, error) {
 	return &dynamoDBRepo{
 		client:    client,
 		tableName: tableName,
 	}, nil
 }
+
+// func NewDynamoDBRepo(profile, tableName string) (*dynamoDBRepo, error) {
+// 	config, err := config.LoadDefaultConfig(context.TODO(), func(lo *config.LoadOptions) error {
+// 		lo.SharedConfigProfile = profile
+// 		return nil
+// 	})
+// 	if err != nil {
+// 		return nil, fmt.Errorf("connecting to AWS using the profile %q: %v", profile, err)
+// 	}
+
+// 	client := dynamodb.NewFromConfig(config)
+
+// 	return &dynamoDBRepo{
+// 		client:    client,
+// 		tableName: tableName,
+// 	}, nil
+// }

@@ -7,46 +7,39 @@ import (
 	"meetup/repository"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
-var createTableCmd = &cobra.Command{
-	Use:          "create-table",
-	Aliases:      []string{"ct"},
-	Short:        "Create the DynamoDB table",
-	SilenceUsage: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		profile := viper.GetString("profile")
-		tableName := viper.GetString("table")
-		return createTable(profile, tableName)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(createTableCmd)
-}
-
-func createTable(profile, tableName string) error {
-	repo, err := repository.NewDynamoDBRepo(profile, tableName)
-	if err != nil {
-		return err
+func newCreateTableCmd(app *App) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:          "create-table",
+		Aliases:      []string{"ct"},
+		Short:        "Create the DynamoDB table",
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return createTable(app.repo)
+		},
 	}
 
+	return cmd
+
+}
+
+func createTable(repo Repository) error {
 	action := func() {
 		fmt.Printf("...")
 	}
 
-	err = repo.CreateTable(context.Background(), action)
+	err := repo.CreateTable(context.Background(), action)
 	if err != nil {
 		if errors.Is(err, repository.ErrTableAlreadyExists) {
-			fmt.Printf("\nTable %s already exists\n", tableName)
+			fmt.Println("\nTable already exists")
 			return nil
 		}
 
 		return err
 	}
 
-	fmt.Printf("\nTable %s created\n", tableName)
+	fmt.Println("\nTable created")
 
 	return nil
 }
