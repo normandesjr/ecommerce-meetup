@@ -30,3 +30,25 @@ func (d *dynamoDBRepo) UpdateAddress(ctx context.Context, customer Customer, add
 
 	return nil
 }
+
+func (d *dynamoDBRepo) RemoveAddress(ctx context.Context, customer Customer, addressId string) error {
+	id := fmt.Sprintf("addresses.%s", addressId)
+	update := expression.Remove(expression.Name(id))
+	expr, err := expression.NewBuilder().WithUpdate(update).Build()
+	if err != nil {
+		return err
+	}
+
+	_, err = d.client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
+		TableName:                 aws.String(d.tableName),
+		Key:                       customer.GetKey(),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		UpdateExpression:          expr.Update(),
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
