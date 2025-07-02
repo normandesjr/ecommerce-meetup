@@ -11,6 +11,11 @@ All the commands bellow expect the environment variable to be set, be sure to ex
 ```sh
 export CDAY_PROFILE=profile
 ```
+## Delete Table
+
+```sh
+go run main.go delete-table
+```
 
 ## Create Table
 
@@ -27,29 +32,36 @@ go run main.go create-customer --email normandes@email.com --username normandesj
 go run main.go create-customer --email sarah@email.com --username sarahmamede --name "Sarah Mamede"
 ```
 
-## Delete Table
-
-go run main.go delete-table
-
 ## Add Addresses
 
-- go run main.go update-customer --customer normandesjr --addressId home --address "Al Qwerty 256"
-- go run main.go update-customer --customer normandesjr --addressId work --address "Av Rondon 1700"
+```sh
+go run main.go update-address --username normandesjr --id home --street-address "Al Qwerty 256" --zip-code "38400-000"
+
+go run main.go update-address --username normandesjr --id work --street-address "Av Rondon 1700" --zip-code "38400-000"
+
+go run main.go update-address --username sarahmamede --id home --street-address "Al Qwert 156" --zip-code "38400-000"
+```
 
 ## Create Orders
 
-- go run main.go create-order --customer normandesjr --amount 100
-- go run main.go create-order --customer normandesjr --amount 200
-- go run main.go create-order --customer normandesjr --amount 300
+```sh
+go run main.go create-order --username normandesjr --ship-address home --items 1,3,5
+
+go run main.go create-order --username normandesjr --ship-address home --items 2,4,6
+
+go run main.go create-order --username sarahmamede --ship-address home --items 5,6,7,8,9
+``` 
 
 ## Search Orders
 
-- go run main.go search-customer-orders --customer normandesjr --limit 2
+```sh
+go run main.go get-order --username normandesjr
 
-## Create Order with Items
-
-- go run main.go create-order --customer normandesjr --amount 250 --add-items true
+go run main.go get-order --username sarahmamede
+```
 
 ## Search Order with items
 
-- go run main.go search-order-items --order-id <orderId>
+```sh
+go run main.go get-order-items --order-id <orderId>
+```
