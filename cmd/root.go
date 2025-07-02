@@ -19,7 +19,9 @@ type Repository interface {
 	UpdateAddress(ctx context.Context, customer repository.Customer, address repository.Address) error
 	RemoveAddress(ctx context.Context, customer repository.Customer, addressId string) error
 	CreateOrder(ctx context.Context, customer *repository.Customer, items repository.OrderItems) error
+	UpdateStatusOrder(ctx context.Context, order *repository.Order, status string) error
 	GetOrders(ctx context.Context, customer *repository.Customer) ([]repository.Order, error)
+	GetOrderById(ctx context.Context, orderId string) (*repository.Order, error)
 	GetOrderItems(ctx context.Context, orderId string) (repository.OrderItems, error)
 	CreateTable(ctx context.Context, action func()) error
 	DeleteTable(ctx context.Context, action func()) error
@@ -82,6 +84,7 @@ func newRootCmd() *cobra.Command {
 	cmd.AddCommand(newGetOrderItemsCmd(app))
 	cmd.AddCommand(newUpdateAddressCmd(app))
 	cmd.AddCommand(newRemoveAddressCmd(app))
+	cmd.AddCommand(newUpdateStatusOrderCmd(app))
 
 	cobra.OnInitialize(initConfig)
 	return cmd

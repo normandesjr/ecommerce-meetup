@@ -36,6 +36,7 @@ type Order struct {
 	Status    string `dynamodbav:"status"`
 	Total     int    `dynamodbav:"total"`
 	ShippedTo string `dynamodbav:"shippedTo"`
+	Username  string `dynamodbav:"username"`
 	GSI1PK    string `dynamodbav:"GSI1PK"`
 	GSI1SK    string `dynamodbav:"GSI1SK"`
 }
@@ -54,19 +55,16 @@ type OrderItem struct {
 type OrderItems []OrderItem
 
 func (customer Customer) GetKey() map[string]types.AttributeValue {
-	//TODO: Melhorar essa constante CUSTOMER#
 	pk, err := attributevalue.Marshal(fmt.Sprintf("CUSTOMER#%s", customer.Username))
 	if err != nil {
 		panic(err)
 	}
 
-	//TODO: Melhorar essa constante CUSTOMER#
 	sk, err := attributevalue.Marshal(fmt.Sprintf("CUSTOMER#%s", customer.Username))
 	if err != nil {
 		panic(err)
 	}
 
-	//TODO: Melhorar essas constantes PK e SK
 	return map[string]types.AttributeValue{"PK": pk, "SK": sk}
 }
 

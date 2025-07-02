@@ -21,7 +21,6 @@ func newCreateTableCmd(app *App) *cobra.Command {
 	}
 
 	return cmd
-
 }
 
 func createTable(repo Repository) error {

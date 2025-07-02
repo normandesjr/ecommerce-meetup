@@ -19,13 +19,7 @@ func newUpdateAddressCmd(app *App) *cobra.Command {
 			streetAddress, _ := cmd.Flags().GetString("street-address")
 			zipCode, _ := cmd.Flags().GetString("zip-code")
 
-			customer := repository.Customer{Username: username}
-			address := repository.Address{
-				Id:            addressId,
-				StreetAddress: streetAddress, ZipCode: zipCode,
-			}
-
-			return addAddress(app.repo, customer, address)
+			return addAddress(app.repo, username, addressId, streetAddress, zipCode)
 		},
 	}
 
@@ -44,6 +38,12 @@ func newUpdateAddressCmd(app *App) *cobra.Command {
 	return cmd
 }
 
-func addAddress(repo Repository, customer repository.Customer, address repository.Address) error {
+func addAddress(repo Repository, username, addressId, streetAddress, zipCode string) error {
+	customer := repository.Customer{Username: username}
+	address := repository.Address{
+		Id:            addressId,
+		StreetAddress: streetAddress, ZipCode: zipCode,
+	}
+
 	return repo.UpdateAddress(context.Background(), customer, address)
 }

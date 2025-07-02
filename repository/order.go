@@ -33,6 +33,7 @@ func (d *dynamoDBRepo) CreateOrder(ctx context.Context, customer *Customer, item
 		CreatedAt: time.Now().UTC().Format(time.RFC3339),
 		Status:    "PENDING",
 		ShippedTo: addressToShip,
+		Username:  customer.Username,
 		Total:     total,
 		GSI1PK:    fmt.Sprintf("ORDER#%s", orderId),
 		GSI1SK:    fmt.Sprintf("ORDER#%s", orderId),
@@ -83,6 +84,42 @@ func (d *dynamoDBRepo) CreateOrder(ctx context.Context, customer *Customer, item
 	return nil
 }
 
+func (d *dynamoDBRepo) GetOrderById(ctx context.Context, orderId string) (*Order, error) {
+	keyEx := expression.Key("GSI1PK").Equal(expression.Value(fmt.Sprintf("ORDER#%s", orderId))).
+		And(expression.Key("GSI1SK").Equal(expression.Value(fmt.Sprintf("ORDER#%s", orderId))))
+
+	expr, err := expression.NewBuilder().
+		WithKeyCondition(keyEx).
+		Build()
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := d.client.Query(ctx, &dynamodb.QueryInput{
+		TableName:                 aws.String(d.tableName),
+		IndexName:                 aws.String("GSI1"),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		KeyConditionExpression:    expr.KeyCondition(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(response.Items) == 0 {
+		return nil, err
+	}
+
+	var foundOrder Order
+	err = attributevalue.UnmarshalMap(response.Items[0], &foundOrder)
+	if err != nil {
+		return nil, err
+	}
+
+	return &foundOrder, nil
+
+}
+
 func (d *dynamoDBRepo) GetOrders(ctx context.Context, customer *Customer) ([]Order, error) {
 	keyEx := expression.Key("PK").Equal(expression.Value(fmt.Sprintf("CUSTOMER#%s", customer.Username))).
 		And(expression.Key("SK").BeginsWith("#ORDER#"))
@@ -128,4 +165,38 @@ func (d *dynamoDBRepo) GetOrders(ctx context.Context, customer *Customer) ([]Ord
 	}
 
 	return orders, nil
+}
+
+func (d *dynamoDBRepo) UpdateStatusOrder(ctx context.Context, order *Order, status string) error {
+	pk, err := attributevalue.Marshal(fmt.Sprintf("CUSTOMER#%s", order.Username))
+	if err != nil {
+		return err
+	}
+	sk, err := attributevalue.Marshal(fmt.Sprintf("#ORDER#%s", order.Id))
+	if err != nil {
+		return err
+	}
+	key := map[string]types.AttributeValue{"PK": pk, "SK": sk}
+
+	update := expression.Set(expression.Name("status"), expression.Value(status))
+
+	expr, err := expression.NewBuilder().
+		WithUpdate(update).
+		Build()
+	if err != nil {
+		return err
+	}
+
+	_, err = d.client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
+		TableName:                 aws.String(d.tableName),
+		Key:                       key,
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		UpdateExpression:          expr.Update(),
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
