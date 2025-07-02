@@ -9,7 +9,7 @@ import (
 
 func newRemoveAddressCmd(app *App) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "remove-address --username <username> --id <address id>",
+		Use:          "remove-address",
 		Aliases:      []string{"ra"},
 		Short:        "Remove customer's address",
 		SilenceUsage: true,

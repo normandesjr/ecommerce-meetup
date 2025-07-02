@@ -65,3 +65,15 @@ go run main.go get-order --username sarahmamede
 ```sh
 go run main.go get-order-items --order-id <orderId>
 ```
+
+## Update order status
+
+```sh
+go run main.go update-status-order --order-id <orderId> --status shipped
+```
+
+### Remove user address
+
+```sh
+go run main.go remove-address --username normandesjr --id home
+```
