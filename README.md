@@ -4,7 +4,7 @@
 
 You should use an AWS Profile to connect to AWS and use the commands.
 
-You can pass to CLI using `-profile`, `-p` or via environment variable `CDAY_PROFILE`.
+You can pass to CLI using `--profile`, `-p` or via environment variable `CDAY_PROFILE`.
 
 All the commands bellow expect the environment variable to be set, be sure to export it.
 
@@ -19,7 +19,7 @@ go run main.go delete-table
 
 ## Create Table
 
-The table will be named "CloudDayTable" unless you define the flag `-table` or via environment variable `CDAY_TABLE`.
+The table will be named "CloudDayTable" unless you define the flag `--table`, `-t` or via environment variable `CDAY_TABLE`.
 
 ```sh
 go run main.go create-table
