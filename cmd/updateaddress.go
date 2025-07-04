@@ -9,7 +9,7 @@ import (
 
 func newUpdateAddressCmd(app *App) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "update-address --username <username> --id <address id> --street-address <street address> --zip-code <zip code>",
+		Use:          "update-address",
 		Aliases:      []string{"ua"},
 		Short:        "Update address to the customer",
 		SilenceUsage: true,

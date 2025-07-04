@@ -42,6 +42,18 @@ go run main.go update-address --username normandesjr --id work --street-address 
 go run main.go update-address --username sarahmamede --id home --street-address "Al Qwerty 156" --zip-code "38400-111"
 ```
 
+## Update Address
+
+```sh
+go run main.go update-address --username normandesjr --id home --street-address "Al Qwerty 156" --zip-code "38400-111"
+```
+
+## Delete Address
+
+```sh
+go run main.go remove-address --username normandesjr --id work
+```
+
 ## Create Orders
 
 ```sh
