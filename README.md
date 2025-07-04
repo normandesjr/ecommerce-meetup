@@ -35,11 +35,11 @@ go run main.go create-customer --email sarah@email.com --username sarahmamede --
 ## Add Addresses
 
 ```sh
-go run main.go update-address --username normandesjr --id home --street-address "Al Qwerty 256" --zip-code "38400-000"
+go run main.go update-address --username normandesjr --id home --street-address "Al Qwerty 256" --zip-code "38400-111"
 
-go run main.go update-address --username normandesjr --id work --street-address "Av Rondon 1700" --zip-code "38400-000"
+go run main.go update-address --username normandesjr --id work --street-address "Av Rondon 1700" --zip-code "38400-222"
 
-go run main.go update-address --username sarahmamede --id home --street-address "Al Qwert 156" --zip-code "38400-000"
+go run main.go update-address --username sarahmamede --id home --street-address "Al Qwerty 156" --zip-code "38400-111"
 ```
 
 ## Create Orders
